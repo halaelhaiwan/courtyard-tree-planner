@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Courtyard Tree Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: inputs rail on the left, results column on the right; stacks to one column on phones. */
+:root{
+  --bg:#f4f3ef; --surface:#ffffff; --ink:#1d2621; --muted:#5d6862; --line:#d9dcd5;
+  --accent:#1e6b5c; --accent-soft:#e1efe9;
+  --sand:#e9e2d2; --wall:#b9ae97; --ground:#efe9db; --crown:#3f8a5f; --crown-edge:#2b6646; --trunk:#7a5a3c;
+  --thesis:#2f7d4f; --thesis-bg:#e2f1e7; --lit:#2d5f9a; --lit-bg:#e2ebf7; --ph:#b25a1e; --ph-bg:#fbe9dc; --user:#8a6d00; --user-bg:#fbf3d0;
+  --warn:#9a4a00; --warn-bg:#fdf0e1; --good:#2f7d4f;
+  --display:"Newsreader", Georgia, "Times New Roman", serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#141a17; --surface:#1c2420; --ink:#e7ece8; --muted:#a2ada7; --line:#33403a;
+    --accent:#62c2a6; --accent-soft:#1f3a32;
+    --sand:#2a2a24; --wall:#6c6553; --ground:#24261f; --crown:#4fa274; --crown-edge:#86c9a0; --trunk:#a58260;
+    --thesis:#7fd1a0; --thesis-bg:#1d3527; --lit:#8db8ec; --lit-bg:#1c2b40; --ph:#f0a46c; --ph-bg:#3a2617; --user:#e8cf63; --user-bg:#352e12;
+    --warn:#f0a46c; --warn-bg:#3a2617; --good:#7fd1a0;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#141a17; --surface:#1c2420; --ink:#e7ece8; --muted:#a2ada7; --line:#33403a;
+  --accent:#62c2a6; --accent-soft:#1f3a32;
+  --sand:#2a2a24; --wall:#6c6553; --ground:#24261f; --crown:#4fa274; --crown-edge:#86c9a0; --trunk:#a58260;
+  --thesis:#7fd1a0; --thesis-bg:#1d3527; --lit:#8db8ec; --lit-bg:#1c2b40; --ph:#f0a46c; --ph-bg:#3a2617; --user:#e8cf63; --user-bg:#352e12;
+  --warn:#f0a46c; --warn-bg:#3a2617; --good:#7fd1a0;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
+a{color:var(--accent)}
+.wrap{max-width:1240px;margin:0 auto;padding:24px 20px 48px}
+header{display:grid;gap:8px;margin-bottom:18px}
+.kicker{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:600 34px/1.1 var(--display);margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:72ch;margin:0}
+.notice{display:flex;gap:12px;align-items:flex-start;background:var(--ph-bg);border:1px solid color-mix(in srgb,var(--ph) 35%,transparent);border-radius:10px;padding:12px 14px;font-size:14px;max-width:none}
+.notice b{color:var(--ph)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:4px;font:600 10.5px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;padding:4px 6px;border-radius:4px;white-space:nowrap;vertical-align:middle}
+.tag.thesis{color:var(--thesis);background:var(--thesis-bg)}
+.tag.lit{color:var(--lit);background:var(--lit-bg)}
+.tag.ph{color:var(--ph);background:var(--ph-bg)}
+.tag.user{color:var(--user);background:var(--user-bg)}
+.tag.geo{color:var(--muted);background:var(--sand)}
+.grid{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.rail{display:grid;gap:14px;position:sticky;top:12px}
+@media (max-width:900px){.rail{position:static}}
+.rail h2,.results h2{font:600 19px/1.2 var(--display);margin:0 0 4px}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:10px}
+legend{font:600 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0}
+.field{display:grid;gap:4px}
+.field label{font-size:13.5px;font-weight:500;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=number],select{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+input[type=number]{font-family:var(--mono);font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{font-size:12px;color:var(--muted);line-height:1.4}
+.results{display:grid;gap:16px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:700px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:4px;align-content:start}
+.tile .k{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:6px;align-items:center}
+.tile .v{font:600 26px/1.1 var(--mono);font-variant-numeric:tabular-nums}
+.tile .v small{font:500 13px var(--body);color:var(--muted);margin-left:3px}
+.tile .s{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{font:500 13.5px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.drawings{display:grid;grid-template-columns:1.35fr 1fr;gap:14px}
+@media (max-width:760px){.drawings{grid-template-columns:1fr}}
+.fig{display:grid;gap:6px;min-width:0}
+.fig svg{width:100%;height:auto;display:block;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.fig .cap{font-size:12px;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:760px){.cards{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:6px;background:var(--surface);align-content:start}
+.card.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.card h3{font:600 16px/1.2 var(--display);margin:0;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.metric{display:grid;gap:2px;font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+.metric span:last-child{font:500 14px var(--mono);font-variant-numeric:tabular-nums}
+.cool{color:var(--good)} .hot{color:var(--warn)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--thesis)}
+.notes{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.notes li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:14px;padding:10px 12px;border-radius:8px;background:var(--bg);border-left:3px solid var(--line)}
+.notes li.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+.notes li.ok{border-left-color:var(--good)}
+.water{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.water{grid-template-columns:1fr}}
+.formula{font:13px/1.6 var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.future{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (max-width:700px){.future{grid-template-columns:1fr}}
+.future div{background:var(--ph-bg);border-radius:8px;padding:10px 12px;font-size:14px}
+.future b{display:block;color:var(--ph);font-size:13px;margin-bottom:2px}
+.sources{font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+.sources p{margin:0}
+.sec-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
+footer{margin-top:22px;font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="kicker">Concept prototype · PhD application, KAUST UrbanLab</div>
+  <h1>Courtyard Tree Planner</h1>
+  <p class="lede">Enter a courtyard and a tree type. The planner draws a layout, shows how each arrangement performed in my M.Sc. ENVI-met simulations, and estimates the irrigation water the trees would need.</p>
+  <div class="notice" role="note"><div><b>Prototype, not a prediction.</b> Cooling figures are ENVI-met simulation results for one hot summer day in Dehradun, India (subtropical), at one point per courtyard. They show what the PhD will test for Saudi courtyards; they are not results for your courtyard. Every number is labelled with where it comes from.</div></div>
+  <div class="legend">Labels:
+    <span class="tag thesis">Thesis</span> M.Sc. simulation evidence
+    <span class="tag lit">Literature</span> published method or value
+    <span class="tag geo">Geometry</span> calculated from your inputs
+    <span class="tag ph">PhD</span> placeholder for future modelling
+  </div>
+</header>
+
+<div class="grid">
+<aside class="rail">
+  <form class="panel" id="inputs" autocomplete="off">
+    <h2>Your courtyard</h2>
+    <fieldset>
+      <legend>Geometry</legend>
+      <div class="row2">
+        <div class="field"><label for="len">Length (m)</label><input type="number" id="len" min="6" max="200" step="1" value="40"></div>
+        <div class="field"><label for="wid">Width (m)</label><input type="number" id="wid" min="4" max="120" step="1" value="16"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="hgt">Building height (m)</label><input type="number" id="hgt" min="3" max="60" step="0.5" value="12"></div>
+        <div class="field"><label for="orient">Long side runs</label>
+          <select id="orient"><option value="EW">East–West</option><option value="NS">North–South</option></select></div>
+      </div>
+      <div class="field"><label for="wind">Prevailing wind from (°)</label><input type="number" id="wind" min="0" max="359" step="1" value="315">
+        <span class="hint">0 = north, 90 = east. Riyadh's summer wind is mostly from the north-west; check local data.</span></div>
+    </fieldset>
+  </form>
+  <div class="panel">
+    <fieldset>
+      <legend>Tree <span class="tag thesis">Thesis models</span></legend>
+      <div class="field"><label for="tree">Tree type (ENVI-met model)</label><select id="tree"></select>
+        <span class="hint" id="treeInfo"></span></div>
+      <div class="field"><label for="spacing">Spacing between trees (m)</label><input type="number" id="spacing" min="2" max="40" step="0.5" value="12">
+        <span class="hint">The thesis courtyards used 12 m. The planner never lets crowns overlap.</span></div>
+    </fieldset>
+  </div>
+  <div class="panel">
+    <fieldset>
+      <legend>Water <span class="tag lit">Literature</span></legend>
+      <div class="field"><label for="ks">Species water need</label>
+        <select id="ks"><option value="0.2">Low (e.g. Sidr, Ghaf) · 0.2</option><option value="0.5" selected>Moderate · 0.5</option><option value="0.8">High · 0.8</option></select>
+        <span class="hint">Species factor, mid-point of the WUCOLS classes.</span></div>
+      <div class="row2">
+        <div class="field"><label for="et0">ET₀ (mm/day)</label><input type="number" id="et0" min="1" max="20" step="0.1" value="9.5"></div>
+        <div class="field"><label for="kmc">Microclimate</label>
+          <select id="kmc"><option value="0.8">Enclosed · 0.8</option><option value="1" selected>Average · 1.0</option><option value="1.2">Hot, reflective · 1.2</option></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="eff">Irrigation efficiency</label><input type="number" id="eff" min="0.3" max="1" step="0.05" value="0.9"></div>
+        <div class="field"><label for="days">Irrigated days</label><input type="number" id="days" min="1" max="365" step="1" value="92"></div>
+      </div>
+      <div class="field"><label for="src">Water source <span class="tag ph">PhD</span></label>
+        <select id="src"><option value="tse">Treated wastewater</option><option value="desal">Desalinated water</option><option value="ground">Groundwater</option></select>
+        <span class="hint">Its carbon footprint is part of the PhD's life-cycle assessment; not calculated here.</span></div>
+    </fieldset>
+  </div>
+</aside>
+
+<main class="results">
+  <section class="tiles" aria-label="Summary">
+    <div class="tile"><div class="k">Trees <span class="tag geo">Geometry</span></div><div class="v" id="tN">–</div><div class="s" id="tNs"></div></div>
+    <div class="tile"><div class="k">Canopy cover <span class="tag geo">Geometry</span></div><div class="v" id="tC">–</div><div class="s">of courtyard floor</div></div>
+    <div class="tile"><div class="k">Daytime ΔPET <span class="tag thesis">Thesis</span></div><div class="v" id="tP" style="font-size:21px">–</div><div class="s" id="tPs">Dehradun range, 9:00–17:00</div></div>
+    <div class="tile"><div class="k">Water <span class="tag lit">Literature</span></div><div class="v" id="tW">–</div><div class="s" id="tWs"></div></div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-head">
+      <h2>Layout</h2>
+      <div class="tabs" role="group" aria-label="Planting pattern">
+        <button type="button" data-p="middle" aria-pressed="true">Middle row</button>
+        <button type="button" data-p="edge" aria-pressed="false">Edge</button>
+        <button type="button" data-p="stag" aria-pressed="false">Staggered</button>
+      </div>
+    </div>
+    <div class="drawings">
+      <div class="fig"><svg id="plan" viewBox="0 0 520 340" role="img" aria-label="Plan of the courtyard with tree positions"></svg>
+        <div class="cap" id="planCap"></div></div>
+      <div class="fig"><svg id="section" viewBox="0 0 360 260" role="img" aria-label="Cross-section through the courtyard"></svg>
+        <div class="cap" id="secCap"></div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-head"><h2>How each pattern performed in the thesis</h2><span class="tag thesis">Thesis · Dehradun, 3 July 2019</span></div>
+    <div class="cards" id="cards"></div>
+    <p class="hint" style="margin:10px 0 0">Change in PET compared with the same courtyard without trees, averaged 9:00–17:00 and 18:00–21:00, at one point in each of two courtyards (C1, C2). Medium oval trees, moderate density, 12 m spacing. Source: Mohamed (2021), §4.2.3.</p>
+  </section>
+
+  <section class="panel">
+    <div class="sec-head"><h2>Design notes for this courtyard</h2></div>
+    <ul class="notes" id="notes"></ul>
+  </section>
+
+  <section class="panel">
+    <div class="sec-head"><h2>Irrigation estimate</h2><span class="tag lit">Landscape coefficient method</span></div>
+    <div class="water">
+      <div>
+        <div class="formula" id="formula"></div>
+        <p class="hint">Water need per tree = species factor × microclimate factor × ET₀ × crown area ÷ irrigation efficiency (Costello &amp; Jones, WUCOLS). Crown area is the circle of the model's crown spread. Default ET₀ of 9.5 mm/day is an approximate regional value; summer peaks in Riyadh are higher, so enter local data.</p>
+      </div>
+      <table aria-label="Water use by pattern">
+        <thead><tr><th>Pattern</th><th style="text-align:right">Trees</th><th style="text-align:right">L / day</th><th style="text-align:right">m³ / season</th></tr></thead>
+        <tbody id="wtab"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-head"><h2>What the PhD will add</h2><span class="tag ph">PhD</span></div>
+    <div class="future">
+      <div><b>Any courtyard, not three patterns</b>ENVI-met runs across many sizes, heights and orientations, with a machine-learning model that predicts comfort in seconds.</div>
+      <div><b>Saudi climate</b>Riyadh and Jeddah weather, arid-adapted species such as Sidr and Ghaf, validated against local observations.</div>
+      <div><b>Water as a design goal</b>Irrigation regimes modelled directly, so the planner can find the most cooling per cubic metre of water.</div>
+      <div><b>Life-cycle footprint</b>Carbon and water footprint of the water source (desalinated, treated wastewater, groundwater) over the trees' life.</div>
+    </div>
+  </section>
+
+  <section class="sources">
+    <p><b>Sources.</b> Mohamed, H. (2021). <i>Impact of Tree Arrangements on Outdoor Thermal Comfort in a Residential Neighbourhood in a Sub-Tropical Climate Zone</i>. M.Sc. thesis, Technical University of Munich (tree models: Table 4 and model data; courtyard results: §4.2.3; design findings: §5–6).</p>
+    <p>Costello, L. R., &amp; Jones, K. S. (2014). <i>WUCOLS IV: Water Use Classification of Landscape Species</i>. University of California Cooperative Extension.</p>
+    <p>Alazba, A. A., et al. (2025). Daily reference evapotranspiration derived from hourly timestep using different forms of Penman–Monteith model in arid climates. <i>Water, 17</i>(15), 2272. <a href="https://doi.org/10.3390/w17152272">doi.org/10.3390/w17152272</a></p>
+    <p>Gao, K., et al. (2024). The use of green infrastructure and irrigation in the mitigation of urban heat in a desert city. <i>Building Simulation, 17</i>(5), 679–694. <a href="https://doi.org/10.1007/s12273-024-1110-0">doi.org/10.1007/s12273-024-1110-0</a></p>
+  </section>
+</main>
+</div>
+<footer>Concept prototype by Hala Mohamed, 2026. Built to illustrate a proposed PhD at KAUST UrbanLab; not a design or engineering tool.</footer>
+</div>
+
+<script>
+const TREES = [["C-15","Round","Small","Open",8,6,2,2.5,[0.067,0.107,0.176,0.289,0.449,0.562,0.536,0.358]],["C-12","Round","Small","Moderate",8,6,2,3,[0.08,0.129,0.212,0.347,0.538,0.675,0.644,0.43]],["C-10","Round","Small","Dense",8,6,2,4,[0.106,0.172,0.282,0.463,0.718,0.9,0.858,0.573]],["C-14","Round","Medium","Open",13,10,3,2.5,[0.044,0.059,0.079,0.106,0.144,0.192,0.25,0.309,0.339,0.335,0.314,0.253,0.103]],["C-13","Round","Large","Open",20,16,5,2.5,[0.032,0.038,0.046,0.056,0.067,0.081,0.098,0.117,0.139,0.163,0.186,0.206,0.214,0.213,0.209,0.201,0.184,0.152,0.096,0.018]],["C-11","Round","Large","Moderate",20,16,5,3,[0.038,0.046,0.056,0.067,0.081,0.097,0.117,0.14,0.167,0.195,0.224,0.247,0.257,0.256,0.251,0.241,0.22,0.182,0.115,0.022]],["C-9","Round","Large","Dense",20,16,5,4,[0.051,0.062,0.074,0.089,0.107,0.13,0.156,0.187,0.222,0.26,0.298,0.329,0.343,0.341,0.335,0.321,0.294,0.243,0.153,0.029]],["C-21","Spreading","Small","Moderate",8,8,2,3,[0.174,0.253,0.361,0.484,0.556,0.543,0.477,0.248]],["C-18","Spreading","Small","Dense",8,8,2,4,[0.233,0.338,0.481,0.645,0.741,0.725,0.636,0.331]],["C-22","Spreading","Medium","Open",13,13,3,2.5,[0.107,0.132,0.162,0.196,0.231,0.261,0.275,0.273,0.266,0.25,0.216,0.147,0.036]],["C-20","Spreading","Medium","Moderate",13,13,3,3,[0.128,0.158,0.194,0.235,0.277,0.314,0.33,0.328,0.32,0.3,0.259,0.177,0.043]],["C-17","Spreading","Medium","Dense",13,13,3,4,[0.171,0.211,0.259,0.313,0.369,0.418,0.44,0.437,0.426,0.4,0.345,0.236,0.058]],["C-19","Spreading","Large","Moderate",20,20,5,3,[0.087,0.1,0.114,0.13,0.146,0.164,0.181,0.196,0.208,0.212,0.212,0.21,0.207,0.2,0.19,0.173,0.147,0.107,0.052,0.005]],["C-16","Spreading","Large","Dense",20,20,5,4,[0.117,0.134,0.152,0.173,0.195,0.218,0.241,0.262,0.277,0.283,0.283,0.28,0.276,0.267,0.253,0.231,0.196,0.143,0.07,0.006]],["C-6","Oval","Small","Moderate",8,3,2,3,[0.288,0.376,0.464,0.51,0.503,0.471,0.381,0.154]],["C-3","Oval","Small","Dense",8,3,2,4,[0.384,0.501,0.619,0.679,0.67,0.629,0.507,0.206]],["C-8","Oval","Medium","Open",13,5,3,2.5,[0.143,0.17,0.199,0.228,0.252,0.262,0.261,0.256,0.246,0.225,0.186,0.117,0.022]],["C-5","Oval","Medium","Moderate",13,5,4,3,[0.172,0.204,0.239,0.274,0.302,0.315,0.313,0.308,0.295,0.27,0.223,0.141,0.027]],["C-2","Oval","Medium","Dense",13,5,3,4,[0.229,0.272,0.319,0.365,0.403,0.42,0.418,0.41,0.393,0.36,0.298,0.187,0.036]],["C-7","Oval","Large","Open",20,9,5,2.5,[0.073,0.083,0.095,0.108,0.122,0.136,0.151,0.164,0.173,0.177,0.177,0.175,0.172,0.167,0.158,0.144,0.122,0.089,0.044,0.004]],["C-4","Oval","Large","Moderate",20,9,5,3,[0.087,0.1,0.114,0.13,0.146,0.164,0.181,0.196,0.208,0.212,0.212,0.21,0.207,0.2,0.19,0.173,0.147,0.107,0.052,0.005]],["C-1","Oval","Large","Dense",20,9,5,4,[0.117,0.134,0.152,0.173,0.195,0.218,0.241,0.262,0.277,0.283,0.283,0.28,0.276,0.267,0.253,0.231,0.196,0.143,0.07,0.006]]]
+;
+// Thesis courtyard results (Mohamed 2021, §4.2.3): daytime and evening ΔPET at C1 and C2.
+const THESIS = {
+  middle:{name:"Middle row", day:[-2.0,-1.4], eve:"+0.06 to +0.12 / +0.45 to +0.63", tmrt:[-3.55,-4.45], blurb:"Single row along the centre. Most even shade at midday; best daytime result in both courtyards."},
+  edge:{name:"Edge", day:[-1.2,-0.8], eve:"−0.02 / +0.45 to +0.63", tmrt:[-2.00,-2.86], blurb:"One row on the side that gets the most sun. Second best; the only pattern with no evening penalty in C1."},
+  stag:{name:"Staggered", day:[-1.2,-0.1], eve:"+0.06 to +0.12 / +0.45 to +0.63", tmrt:[-2.09,-1.88], blurb:"Two offset rows near both sides. Least reliable: almost no cooling in the second courtyard."}
+};
+const $ = id => document.getElementById(id);
+let pattern = "middle";
+
+// Populate tree list, grouped by crown shape.
+(function(){
+  const sel = $("tree");
+  ["Oval","Round","Spreading"].forEach(shape=>{
+    const g = document.createElement("optgroup"); g.label = shape + " crown";
+    TREES.filter(t=>t[1]===shape).sort((a,b)=>a[4]-b[4]||a[7]-b[7]).forEach(t=>{
+      const o=document.createElement("option"); o.value=t[0];
+      o.textContent=`${t[2]} · ${t[3]} — ${t[4]} m tall, ${t[5]} m crown (${t[0]})`;
+      if(t[0]==="C-5") o.selected=true;
+      g.appendChild(o);
+    });
+    sel.appendChild(g);
+  });
+})();
+
+function num(id, lo, hi){ let v=parseFloat($(id).value); if(!isFinite(v)) v=lo; return Math.min(hi,Math.max(lo,v)); }
+
+function layout(p, L, W, spread, spacing){
+  // Courtyard in local coords: x along the long side (0..L), y across (0..W).
+  const r = spread/2, margin = r + 1, s = Math.max(spacing, spread);
+  const avail = L - 2*margin;
+  const n = avail < 0 ? 0 : Math.floor(avail/s + 1e-9) + 1;
+  const used = (n-1)*s, x0 = (L - used)/2;
+  const xs = Array.from({length:n},(_,i)=>x0+i*s);
+  let pts = [];
+  if(p==="middle") pts = xs.map(x=>[x,W/2]);
+  if(p==="edge")   pts = xs.map(x=>[x, Math.max(r+1, W - (r+1))]);   // y=W is the sunnier side (see sunSide)
+  if(p==="stag")   pts = xs.map((x,i)=>[x, i%2 ? W*0.75 : W*0.25]);
+  return {pts, n, s, fits: W >= spread + 2, stagFits: W*0.25 >= r + 0.5};
+}
+
+function render(){
+  const L0=num("len",6,200), W0=num("wid",4,120), H=num("hgt",3,60);
+  const L=Math.max(L0,W0), W=Math.min(L0,W0);
+  const orient=$("orient").value, wind=num("wind",0,359);
+  const t=TREES.find(x=>x[0]===$("tree").value);
+  const [code,shape,size,dens,th,spread,trunk,lai,lad]=t;
+  const spacing=num("spacing",2,40);
+  const ks=parseFloat($("ks").value), kmc=parseFloat($("kmc").value), et0=num("et0",1,20), eff=num("eff",0.3,1), days=num("days",1,365);
+  $("treeInfo").textContent=`${shape} crown, ${dens.toLowerCase()} canopy (LAI ${lai}). Trunk ${trunk} m. Mature size used in the thesis models.`;
+
+  const all = {}; ["middle","edge","stag"].forEach(p=>all[p]=layout(p,L,W,spread,spacing));
+  const cur = all[pattern];
+  const crownA = Math.PI*(spread/2)**2;
+  const perTree = ks*kmc*et0*crownA/eff;           // litres/day (mm × m² = L)
+  const cover = Math.min(100, cur.n*crownA/(L*W)*100);
+  const hw = H/W;
+
+  // Tiles
+  $("tN").textContent = cur.n;
+  $("tNs").textContent = cur.n ? `${THESIS[pattern].name}, ${cur.s.toFixed(1)} m apart` : "Courtyard too short for this tree";
+  $("tC").innerHTML = cover.toFixed(0)+"<small>%</small>";
+  const d=THESIS[pattern].day;
+  $("tP").innerHTML = `${Math.max(...d).toFixed(1)} to ${Math.min(...d).toFixed(1)}<small>°C</small>`.replace(/-/g,"−");
+  $("tW").innerHTML = Math.round(perTree*cur.n).toLocaleString()+"<small>L/day</small>";
+  $("tWs").textContent = `${(perTree*cur.n*days/1000).toFixed(1)} m³ over ${days} days`;
+
+  drawPlan(L,W,orient,wind,cur,spread);
+  drawSection(W,H,th,trunk,spread,lad,pattern,cur);
+  $("planCap").textContent = `Plan, ${L} × ${W} m. ${cur.n} trees with ${spread} m crowns. North arrow and wind arrow show your inputs.`;
+  $("secCap").textContent = `Section across the ${W} m width. Height-to-width ratio ${hw.toFixed(2)}; tree ${th} m tall.`;
+
+  // Cards
+  const maxCool = 2.0;
+  $("cards").innerHTML = Object.entries(THESIS).map(([k,v])=>{
+    const avg=(v.day[0]+v.day[1])/2;
+    return `<div class="card ${k===pattern?"on":""}"><h3>${v.name}${k==="middle"?' <span class="tag thesis">Best</span>':""}</h3>
+      <div class="bar" aria-hidden="true"><i style="width:${Math.abs(avg)/maxCool*100}%"></i></div>
+      <div class="metric"><span>Daytime ΔPET, C1 / C2</span><span class="cool">${v.day[0].toFixed(1)} / ${v.day[1].toFixed(1)} °C</span></div>
+      <div class="metric"><span>Daytime ΔTmrt, C1 / C2</span><span class="cool">${v.tmrt[0].toFixed(1)} / ${v.tmrt[1].toFixed(1)} °C</span></div>
+      <div class="metric"><span>Evening ΔPET, C1 / C2</span><span class="hot">${v.eve} °C</span></div>
+      <div class="hint">${v.blurb}</div></div>`;
+  }).join("");
+
+  // Water table
+  $("formula").innerHTML = `${ks} × ${kmc} × ${et0} mm/day × ${crownA.toFixed(1)} m² ÷ ${eff}<br>= <b>${perTree.toFixed(0)} L per tree per day</b>`;
+  $("wtab").innerHTML = Object.entries(all).map(([k,v])=>`<tr${k===pattern?' style="font-weight:600"':""}><td>${THESIS[k].name}</td><td class="n">${v.n}</td><td class="n">${Math.round(perTree*v.n).toLocaleString()}</td><td class="n">${(perTree*v.n*days/1000).toFixed(1)}</td></tr>`).join("");
+
+  // Notes
+  const notes=[];
+  if(!cur.fits) notes.push(["warn","geo",`The courtyard is narrower than the crown (${spread} m) plus 1 m clearance each side. Choose a smaller or oval tree.`]);
+  if(pattern==="stag" && !cur.stagFits) notes.push(["warn","geo","Staggered rows put crowns against the walls in a courtyard this narrow. Use the middle row instead."]);
+  if(cur.n===0) notes.push(["warn","geo","No tree fits along the length with this spacing. Reduce the spacing or the tree size."]);
+  if(spacing < spread) notes.push(["warn","geo",`Spacing raised to ${spread} m so that crowns do not overlap, as in the thesis scenarios.`]);
+  if(hw>=1 && lai>=4) notes.push(["warn","thesis","Deep courtyard with a dense canopy: the thesis chose moderate density (LAI 3) for narrow yards to limit heat trapped at night."]);
+  else if(hw>=1) notes.push(["ok","thesis","Deep courtyard: a moderate or open canopy, as chosen in the thesis, limits heat trapped under the trees at night."]);
+  if(shape!=="Oval") notes.push(["ok","thesis","The thesis used oval crowns in courtyards so trees do not block sun and daylight to the surrounding rooms. Consider an oval form near windows."]);
+  if(th > H) notes.push(["ok","geo",`The tree (${th} m) is taller than the buildings (${H} m): its crown will catch more sun and wind, and likely need more water.`]);
+  // wind vs row direction
+  const rowAz = orient==="EW" ? 90 : 0;
+  let diff = Math.abs(((wind - rowAz) % 180 + 180) % 180); diff = Math.min(diff, 180-diff);
+  if(diff<=30) notes.push(["ok","thesis",`The rows run roughly with the wind (${Math.round(diff)}° apart). In the thesis park, rows parallel to the wind gave the best result (−1.22 °C PET).`]);
+  else if(diff>=60) notes.push(["warn","thesis",`The rows run across the wind (${Math.round(diff)}° apart). In the thesis park, rows perpendicular to the wind raised PET (+0.27 °C). Leave gaps for air to pass.`]);
+  else notes.push(["ok","thesis",`The rows sit at ${Math.round(diff)}° to the wind. The thesis found rows parallel to the wind work best.`]);
+  notes.push(["warn","thesis","Every pattern made the courtyards slightly warmer in the evening (up to +0.6 °C PET). Trees cool by day but slow night-time cooling in enclosed yards."]);
+  notes.push(["ok","lit","In Riyadh, green infrastructure without irrigation gave no cooling (Gao et al., 2024). Choosing low-water species and drip irrigation is the main lever on the water figure above."]);
+  const label={thesis:'<span class="tag thesis">Thesis</span>',geo:'<span class="tag geo">Geometry</span>',lit:'<span class="tag lit">Literature</span>'};
+  $("notes").innerHTML = notes.map(([c,s,txt])=>`<li class="${c}">${label[s]}<span>${txt}</span></li>`).join("");
+}
+
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+
+function drawPlan(L,W,orient,wind,cur,spread){
+  const svg=$("plan"), VW=520, VH=340, pad=46, wall=14;
+  // Rotate so the drawing's x-axis is the long side; north depends on orientation.
+  const sc=Math.min((VW-2*pad-2*wall)/L,(VH-2*pad-2*wall)/W);
+  const w=L*sc,h=W*sc,ox=(VW-w)/2,oy=(VH-h)/2;
+  // In the drawing, top = sunnier side (y=W). For E–W courtyards top is north; for N–S top is east.
+  const northAngle = orient==="EW" ? 0 : -90; // degrees, arrow rotation in drawing
+  let s=`<rect x="${ox-wall}" y="${oy-wall}" width="${w+2*wall}" height="${h+2*wall}" fill="${cssv('--wall')}" rx="2"/>`;
+  s+=`<rect x="${ox}" y="${oy}" width="${w}" height="${h}" fill="${cssv('--ground')}"/>`;
+  // grid every 5 m
+  for(let x=5;x<L;x+=5) s+=`<line x1="${ox+x*sc}" y1="${oy}" x2="${ox+x*sc}" y2="${oy+h}" stroke="${cssv('--line')}" stroke-width="0.6"/>`;
+  for(let y=5;y<W;y+=5) s+=`<line x1="${ox}" y1="${oy+h-y*sc}" x2="${ox+w}" y2="${oy+h-y*sc}" stroke="${cssv('--line')}" stroke-width="0.6"/>`;
+  cur.pts.forEach(([x,y])=>{
+    const cx=ox+x*sc, cy=oy+h-y*sc, r=spread/2*sc;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${cssv('--crown')}" fill-opacity="0.55" stroke="${cssv('--crown-edge')}" stroke-width="1.2"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="2.2" fill="${cssv('--trunk')}"/>`;
+  });
+  // dimensions
+  s+=`<text x="${ox+w/2}" y="${oy+h+wall+16}" text-anchor="middle" font-size="12" font-family="IBM Plex Mono, monospace" fill="${cssv('--muted')}">${L} m</text>`;
+  s+=`<text x="${ox-wall-8}" y="${oy+h/2}" text-anchor="middle" font-size="12" font-family="IBM Plex Mono, monospace" fill="${cssv('--muted')}" transform="rotate(-90 ${ox-wall-8} ${oy+h/2})">${W} m</text>`;
+  // sunny side label
+  s+=`<text x="${ox+w/2}" y="${oy-wall-6}" text-anchor="middle" font-size="11" font-family="IBM Plex Sans, sans-serif" fill="${cssv('--muted')}">sunnier side (${orient==="EW"?"north":"east"} half)</text>`;
+  // north arrow
+  const nx=VW-26, ny=28;
+  s+=`<g transform="translate(${nx} ${ny}) rotate(${northAngle})"><path d="M0 -14 L6 6 L0 2 L-6 6 Z" fill="${cssv('--ink')}"/><text x="0" y="-18" text-anchor="middle" font-size="11" font-weight="600" fill="${cssv('--ink')}" transform="rotate(${-northAngle} 0 -22)">N</text></g>`;
+  // wind arrow: wind FROM direction (compass), drawing angle = compass + northAngle; arrow points downwind
+  const wa = (wind + northAngle) * Math.PI/180;
+  const wx=26, wy=28, len=16;
+  const fx=wx+Math.sin(wa)*len, fy=wy-Math.cos(wa)*len, tx=wx-Math.sin(wa)*len, ty=wy+Math.cos(wa)*len;
+  s+=`<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${cssv('--lit')}"/></marker></defs>`;
+  s+=`<line x1="${fx}" y1="${fy}" x2="${tx}" y2="${ty}" stroke="${cssv('--lit')}" stroke-width="2" marker-end="url(#ah)"/>`;
+  s+=`<text x="${wx}" y="${wy+30}" text-anchor="middle" font-size="10.5" fill="${cssv('--lit')}">wind</text>`;
+  svg.innerHTML=s;
+}
+
+function drawSection(W,H,th,trunk,spread,lad,p,cur){
+  const svg=$("section"), VW=360, VH=260, pad=26, bw=34;
+  const totalW=W+2*6, sc=Math.min((VW-2*pad)/totalW,(VH-2*pad-34)/Math.max(H,th)), gy=VH-pad;
+  const cx0=VW/2 - (W*sc)/2;
+  let s=`<line x1="${pad/2}" y1="${gy}" x2="${VW-pad/2}" y2="${gy}" stroke="${cssv('--muted')}" stroke-width="1"/>`;
+  s+=`<rect x="${cx0-6*sc}" y="${gy-H*sc}" width="${6*sc}" height="${H*sc}" fill="${cssv('--wall')}"/>`;
+  s+=`<rect x="${cx0+W*sc}" y="${gy-H*sc}" width="${6*sc}" height="${H*sc}" fill="${cssv('--wall')}"/>`;
+  // tree positions across width for this pattern
+  const ys = p==="stag" ? [W*0.25,W*0.75] : [cur.pts.length?cur.pts[0][1]:W/2];
+  const maxL=Math.max(...lad), depth=th-trunk;
+  ys.forEach(y=>{
+    const x=cx0+y*sc;
+    s+=`<rect x="${x-1.5}" y="${gy-trunk*sc}" width="3" height="${trunk*sc}" fill="${cssv('--trunk')}"/>`;
+    // crown drawn from LAD profile: wider/denser where LAD is higher
+    lad.forEach((v,i)=>{
+      const z0=trunk+depth*i/lad.length, z1=trunk+depth*(i+1)/lad.length;
+      const half=spread/2*sc*(0.45+0.55*v/maxL);
+      s+=`<rect x="${x-half}" y="${gy-z1*sc}" width="${2*half}" height="${(z1-z0)*sc+0.4}" fill="${cssv('--crown')}" fill-opacity="${0.25+0.6*v/maxL}"/>`;
+    });
+  });
+  // height label
+  s+=`<text x="${cx0+W*sc+3*sc}" y="${gy-H*sc-5}" text-anchor="middle" font-size="11" font-family="IBM Plex Mono, monospace" fill="${cssv('--muted')}">${H} m</text>`;
+  s+=`<text x="${cx0+W*sc/2}" y="${gy+16}" text-anchor="middle" font-size="11" font-family="IBM Plex Mono, monospace" fill="${cssv('--muted')}">${W} m</text>`;
+  s+=`<text x="${pad/2}" y="16" font-size="11" fill="${cssv('--muted')}">Crown shading follows the model's leaf area density</text>`;
+  svg.innerHTML=s;
+}
+
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  pattern=b.dataset.p;
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-pressed", x===b?"true":"false"));
+  render();
+}));
+document.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",render));
+$("inputs").addEventListener("submit",e=>e.preventDefault());
+if(window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",render);
+new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+render();
+</script>
+</body>
+</html>
